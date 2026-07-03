@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CodeCraftHub</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f4f6f9;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        input, select {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: blue;
+            color: white;
+            padding: 8px 12px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-success {
+            background: green;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            background: red;
+            color: white;
+            padding: 6px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+        }
+
+        .success {
+            background: #d4edda;
+        }
+
+        .error {
+            background: #f8d7da;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>CodeCraftHub Dashboard</h1>
+
+    <div id="msg"></div>
+
+    <input type="text" id="title" placeholder="Title">
+    <input type="text" id="instructor" placeholder="Instructor">
+
+    <select id="status">
+        <option>Active</option>
+        <option>Completed</option>
+        <option>Draft</option>
+    </select>
+
+    <button class="btn-primary" onclick="addCourse()">Add Course</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Instructor</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="courseTable"></tbody>
+    </table>
+
+</div>
+
+<script>
+    const API = "http://localhost:3000/api/courses";
+
+    function showMessage(text, type) {
+        const msg = document.getElementById("msg");
+        msg.className = "message " + type;
+        msg.innerText = text;
+
+        setTimeout(() => msg.innerText = "", 3000);
+    }
+
+    async function loadCourses() {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        const table = document.getElementById("courseTable");
+        table.innerHTML = "";
+
+        data.forEach(c => {
+            table.innerHTML += `
+            <tr>
+                <td>${c.id}</td>
+                <td><input value="${c.title}" id="t-${c.id}"></td>
+                <td><input value="${c.instructor}" id="i-${c.id}"></td>
+                <td>
+                    <select id="s-${c.id}">
+                        <option ${c.status === "Active" ? "selected" : ""}>Active</option>
+                        <option ${c.status === "Completed" ? "selected" : ""}>Completed</option>
+                        <option ${c.status === "Draft" ? "selected" : ""}>Draft</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-success" onclick="updateCourse(${c.id})">Update</button>
+                    <button class="btn-delete" onclick="deleteCourse(${c.id})">Delete</button>
+                </td>
+            </tr>
+        `;
+        });
+    }
+
+    async function addCourse() {
+        const title = document.getElementById("title").value;
+        const instructor = document.getElementById("instructor").value;
+        const status = document.getElementById("status").value;
+
+        const res = await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, instructor, status })
+        });
+
+        if (res.ok) {
+            showMessage("Course added", "success");
+            loadCourses();
+        } else {
+            showMessage("Error adding course", "error");
+        }
+    }
+
+    async function updateCourse(id) {
+        const title = document.getElementById(`t-${id}`).value;
+        const instructor = document.getElementById(`i-${id}`).value;
+        const status = document.getElementById(`s-${id}`).value;
+
+        const res = await fetch(`${API}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, instructor, status })
+        });
+
+        if (res.ok) {
+            showMessage("Course updated", "success");
+            loadCourses();
+        } else {
+            showMessage("Error updating course", "error");
+        }
+    }
+
+    async function deleteCourse(id) {
+        const res = await fetch(`${API}/${id}`, {
+            method: "DELETE"
+        });
+
+        if (res.ok) {
+            showMessage("Course deleted", "success");
+            loadCourses();
+        } else {
+            showMessage("Error deleting course", "error");
+        }
+    }
+
+    loadCourses();
+</script>
+
+</body>
+</html>
